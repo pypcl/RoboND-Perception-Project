@@ -85,6 +85,9 @@ def pcl_callback(pcl_msg):
 
         # Add the detected object to the list of detected objects.
 
+    ###CHANGE THIS###
+    detected_objects_list = None
+
     # Publish the list of detected objects
     pcl_table_pub.publish(pcl_msg)
     pcl_objects_pub.publish(pcl_msg)
