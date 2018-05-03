@@ -71,7 +71,7 @@ def pcl_callback(pcl_msg):
     vox = cloud_filtered.make_voxel_grid_filter()
 
     # Choose a voxel (also known as leaf) size
-    LEAF_SIZE = 0.01
+    LEAF_SIZE = 0.005
 
     # Set the voxel (or leaf) size
     vox.set_leaf_size(LEAF_SIZE, LEAF_SIZE, LEAF_SIZE)
@@ -239,13 +239,13 @@ def pcl_callback(pcl_msg):
 
     # Publish the list of detected objects
     detected_objects_pub.publish(detected_objects)
-'''
+
     # Suggested location for where to invoke your pr2_mover() function within pcl_callback()
     # Could add some logic to determine whether or not your object detections are robust
     # before calling pr2_mover()
 
     try:
-        pr2_mover(detected_objects_list)
+        pr2_mover(detected_objects)
     except rospy.ROSInterruptException:
         pass
 
@@ -253,6 +253,11 @@ def pcl_callback(pcl_msg):
 def pr2_mover(object_list):
 
     # TODO: Initialize variables
+    test_scene_num = Int32()
+    arm_name = String()
+    object_name = String()
+    pick_pose = Pose()
+    place_pose = Pose()
     labels = []
     centriods = []
     dict_list = []
@@ -265,7 +270,7 @@ def pr2_mover(object_list):
     for detected_object in object_list:
         labels.append(detected_object.label)
         points_arr = ros_to_pcl(detected_object.cloud).to_array()
-        centriods.append(np.asscalar(np.mean(points_arr, axis=0)[:3]))
+        centriods.append(np.mean(points_arr, axis=0)[:3])
 
     # TODO: Rotate PR2 in place to capture side tables for the collision map
 
@@ -273,22 +278,41 @@ def pr2_mover(object_list):
     for i in range(0, len(object_list_param)):
 
         # Specify variables to be fed into the yaml dict
-        test_scene_num = 1
+
+        # Specify the test scene
+        test_scene_num.data = 1
 
         # Specify the arm name for the object (note that the arm name
         # is dependent on the clour assigned to the arm)
-        arm_name = String()
         if object_list_param[i]['group'] == 'red':
             arm_name.data = 'left'
         else:
             arm_name.data = 'right'
 
-        object_name = String()
-        object_name.data = object_list_param[i]['name']
+        # Specify the object name
+        object_name.data = str(object_list_param[i]['name'])
 
         # TODO: Get the PointCloud for a given object and obtain it's centroid
+        if object_list_param[i]['name'] in labels:
+        	index = labels.index(object_list_param[i]['name'])
+        	centroid = centriods[index]
+        else:
+        	centroid = (0,0,0)
+
+        # assign the pick_pose
+        pick_pose.position.x = float(centroid[0])
+        pick_pose.position.y = float(centroid[1])
+        pick_pose.position.z = float(centroid[2])
 
         # TODO: Create 'place_pose' for the object
+        if arm_name.data == 'left':
+        	place_pose.position.x = float(dropbox_param[0]['position'][0])
+        	place_pose.position.y = float(dropbox_param[0]['position'][1])
+        	place_pose.position.z = float(dropbox_param[0]['position'][2])
+        else:
+        	place_pose.position.x = float(dropbox_param[1]['position'][0])
+        	place_pose.position.y = float(dropbox_param[1]['position'][1])
+        	place_pose.position.z = float(dropbox_param[1]['position'][2])
 
         # TODO: Assign the arm to be used for pick_place
 
@@ -298,8 +322,9 @@ def pr2_mover(object_list):
                                    object_name,
                                    pick_pose,
                                    place_pose)
+        
         dict_list.append(yaml_dict)
-
+        '''
         # Wait for 'pick_place_routine' service to come up
         rospy.wait_for_service('pick_place_routine')
 
@@ -313,9 +338,10 @@ def pr2_mover(object_list):
 
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
-
+		'''
     # TODO: Output your request parameters into output yaml file
-'''
+    print(dict_list)
+    send_to_yaml('test_file_yaml',dict_list)
 
 if __name__ == '__main__':
 
