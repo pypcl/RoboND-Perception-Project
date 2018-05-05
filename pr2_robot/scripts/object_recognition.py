@@ -340,8 +340,8 @@ def pr2_mover(object_list):
             print "Service call failed: %s"%e
 		'''
     # TODO: Output your request parameters into output yaml file
-    print(dict_list)
-    send_to_yaml('test_file_yaml',dict_list)
+    #print(dict_list) # Uncomment to see the dictionary list that is being created
+    send_to_yaml('yaml_out_1',dict_list)
 
 if __name__ == '__main__':
 
